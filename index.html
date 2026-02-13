@@ -77,63 +77,47 @@
     </div>
 
     <script type="module">
-        // Importamos la última versión de la SDK de Google
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        // API KEY ACTUALIZADA
-        const API_KEY = "AIzaSyA6SDlJ7GHERgpAkulBGQnjgv9Xlu23zWw";
-        const genAI = new GoogleGenerativeAI(API_KEY);
+    // 1. GENERÁ UNA CLAVE NUEVA EN: https://aistudio.google.com/app/apikey
+    // 2. PEGALA AQUÍ ABAJO:
+    const API_KEY = "TU_NUEVA_API_KEY_AQUÍ"; 
 
-        // Modelo corregido
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
 
-        window.preguntar = async function() {
-            const text = userInput.value.trim();
-            if (!text) return;
+    window.preguntar = async function() {
+        const text = userInput.value.trim();
+        if (!text) return;
 
-            // Mostrar mensaje del usuario
-            userInput.value = '';
-            appendMessage(text, 'user');
+        userInput.value = '';
+        appendMessage(text, 'user');
+        const loading = appendMessage('...', 'ai');
 
-            // Burbuja de carga
-            const loading = appendMessage('...', 'ai');
-            loading.classList.add('animate-pulse');
-
-            try {
-                // Llamada a la IA
-                const result = await model.generateContent(text);
-                const response = await result.response;
-                const responseText = response.text();
-                
-                loading.classList.remove('animate-pulse');
-                loading.innerText = responseText;
-            } catch (error) {
-                console.error("Error completo:", error);
-                loading.innerText = "Error detectado. Intenta recargar la página o verifica que estés usando Live Server.";
-                loading.classList.add('text-red-400');
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
+        try {
+            const result = await model.generateContent(text);
+            const response = await result.response;
+            loading.innerText = response.text();
+        } catch (error) {
+            // ESTO NOS VA A DECIR EL ERROR REAL
+            console.error(error);
+            loading.innerText = "ERROR REAL: " + error.message; 
+            loading.style.color = "#ff4444";
         }
+    }
 
-        function appendMessage(text, side) {
-            const div = document.createElement('div');
-            const align = side === 'user' ? 'self-end' : 'self-start';
-            const color = side === 'user' ? 'bg-blue-600 text-white' : 'bg-white/5 border border-white/10';
-            const radius = side === 'user' ? 'rounded-br-none' : 'rounded-bl-none';
-            
-            div.className = `message ${align} ${color} p-3 rounded-2xl ${radius} max-w-[85%] text-sm whitespace-pre-wrap shadow-lg`;
-            div.innerText = text;
-            
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return div;
-        }
-
-        // Enviar con la tecla Enter
-        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') preguntar(); });
-    </script>
+    function appendMessage(text, side) {
+        const div = document.createElement('div');
+        div.className = `message ${side === 'user' ? 'self-end bg-blue-600' : 'self-start bg-white/5'} p-3 rounded-2xl mb-4 max-w-[85%] text-sm`;
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return div;
+    }
+    userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') preguntar(); });
+</script>
 </body>
 </html>
