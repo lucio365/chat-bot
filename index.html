@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucio AI | Future Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        body { 
+            background: #050505; 
+            color: #ffffff; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden;
+            margin: 0;
+        }
+
+        /* Efecto de fondo Nebulosa */
+        .nebula {
+            position: fixed; top: 50%; left: 50%; width: 600px; height: 600px;
+            background: radial-gradient(circle, #3b82f6 0%, #8b5cf6 50%, transparent 100%);
+            filter: blur(100px); opacity: 0.15; z-index: -1;
+            transform: translate(-50%, -50%); animation: move 15s infinite alternate;
+        }
+
+        @keyframes move { from { transform: translate(-60%, -40%); } to { transform: translate(-40%, -60%); } }
+
+        /* Estilo Cristal (Glassmorphism) */
+        .glass {
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px;
+        }
+
+        #chat-box { height: 60vh; scrollbar-width: none; overflow-y: auto; }
+        #chat-box::-webkit-scrollbar { display: none; }
+
+        .message { animation: fadeIn 0.3s ease-out forwards; word-wrap: break-word; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        pre { background: #1a1a1a; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 0.8rem; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="nebula"></div>
+
+    <div class="glass w-full max-w-2xl flex flex-col shadow-2xl overflow-hidden mx-4">
+        <header class="p-5 border-b border-white/10 flex justify-between items-center bg-white/5">
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tighter">LUCIO <span class="text-blue-500">AI</span></h1>
+                <p class="text-[10px] text-blue-300/50 uppercase tracking-widest">Neural System v1.5</p>
+            </div>
+            <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-bold">ONLINE</span>
+        </header>
+
+        <div id="chat-box" class="p-6 space-y-4 flex flex-col">
+            <div class="message self-start bg-white/5 border border-white/10 p-3 rounded-2xl rounded-bl-none max-w-[85%] text-sm">
+                ¡Hola Lucio! El chatbot está actualizado y listo. ¿Qué quieres que hagamos hoy?
+            </div>
+        </div>
+
+        <div class="p-4 bg-white/5 border-t border-white/10">
+            <div class="relative flex items-center">
+                <input id="user-input" type="text" 
+                    class="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-blue-500 transition-all text-sm text-white"
+                    placeholder="Escribe tu mensaje aquí...">
+                <button onclick="preguntar()" class="absolute right-2 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-all active:scale-90 shadow-lg shadow-blue-600/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importamos la última versión de la SDK de Google
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // API KEY ACTUALIZADA
+        const API_KEY = "AIzaSyA6SDlJ7GHERgpAkulBGQnjgv9Xlu23zWw";
+        const genAI = new GoogleGenerativeAI(API_KEY);
+
+        // Modelo corregido
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+
+        window.preguntar = async function() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Mostrar mensaje del usuario
+            userInput.value = '';
+            appendMessage(text, 'user');
+
+            // Burbuja de carga
+            const loading = appendMessage('...', 'ai');
+            loading.classList.add('animate-pulse');
+
+            try {
+                // Llamada a la IA
+                const result = await model.generateContent(text);
+                const response = await result.response;
+                const responseText = response.text();
+                
+                loading.classList.remove('animate-pulse');
+                loading.innerText = responseText;
+            } catch (error) {
+                console.error("Error completo:", error);
+                loading.innerText = "Error detectado. Intenta recargar la página o verifica que estés usando Live Server.";
+                loading.classList.add('text-red-400');
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendMessage(text, side) {
+            const div = document.createElement('div');
+            const align = side === 'user' ? 'self-end' : 'self-start';
+            const color = side === 'user' ? 'bg-blue-600 text-white' : 'bg-white/5 border border-white/10';
+            const radius = side === 'user' ? 'rounded-br-none' : 'rounded-bl-none';
+            
+            div.className = `message ${align} ${color} p-3 rounded-2xl ${radius} max-w-[85%] text-sm whitespace-pre-wrap shadow-lg`;
+            div.innerText = text;
+            
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
+        }
+
+        // Enviar con la tecla Enter
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') preguntar(); });
+    </script>
+</body>
+</html>
