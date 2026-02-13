@@ -38,68 +38,55 @@
             </div>
         </div>
     </div>
-
     <script>
-        // TU API KEY DE HUGGING FACE
-        const HF_TOKEN = "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"; 
+    async function preguntar() {
+    const input = document.getElementById('user-input');
+    const chatBox = document.getElementById('chat-box');
+    const text = input.value.trim();
+    
+    if (!text) return;
 
-        async function preguntar() {
-            const input = document.getElementById('user-input');
-            const chatBox = document.getElementById('chat-box');
-            const text = input.value.trim();
-            
-            if (!text) return;
+    input.value = '';
+    appendMsg(text, 'user');
+    
+    const loading = appendMsg('...', 'ai');
+    loading.classList.add('animate-pulse');
 
-            // Mostrar mensaje del usuario
-            input.value = '';
-            appendMsg(text, 'user');
-            
-            // Burbuja de carga
-            const loading = appendMsg('...', 'ai');
-            loading.classList.add('animate-pulse');
+    try {
+        // Usamos el modelo Mistral v0.3 que es más moderno
+        const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3", {
+            headers: { 
+                "Authorization": `Bearer ${HF_TOKEN}`,
+                "Content-Type": "application/json" 
+            },
+            method: "POST",
+            body: JSON.stringify({ 
+                inputs: `[INST] ${text} [/INST]`,
+                parameters: { max_new_tokens: 250 }
+            }),
+        });
 
-            try {
-                const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
-                    headers: { 
-                        "Authorization": `Bearer ${HF_TOKEN}`,
-                        "Content-Type": "application/json" 
-                    },
-                    method: "POST",
-                    body: JSON.stringify({ 
-                        inputs: `<s>[INST] ${text} [/INST]`,
-                        parameters: { max_new_tokens: 250, return_full_text: false }
-                    }),
-                });
-
-                const result = await response.json();
-                
-                // Manejar respuesta
-                let aiText = "Error al procesar la respuesta";
-                if (Array.isArray(result) && result[0].generated_text) {
-                    aiText = result[0].generated_text.trim();
-                } else if (result.error) {
-                    aiText = "Error del servidor: " + result.error;
-                }
-
-                loading.innerText = aiText;
-                loading.classList.remove('animate-pulse');
-            } catch (error) {
-                loading.innerText = "Error de conexión: " + error.message;
-                console.error(error);
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
+        const result = await response.json();
+        
+        // Si el modelo se está cargando, Hugging Face devuelve un tiempo estimado
+        if (result.estimated_time) {
+            loading.innerText = "El modelo se está iniciando, espera unos segundos y vuelve a intentar...";
+            return;
         }
 
-        function appendMsg(text, side) {
-            const div = document.createElement('div');
-            div.className = `message p-3 rounded-2xl max-w-[85%] ${side === 'user' ? 'self-end bg-blue-600' : 'self-start bg-white/5 border border-white/10'}`;
-            div.innerText = text;
-            document.getElementById('chat-box').appendChild(div);
-            document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
-            return div;
+        let aiText = "Error al procesar la respuesta";
+        if (Array.isArray(result) && result[0].generated_text) {
+            // Limpiamos la respuesta del formato [INST]
+            aiText = result[0].generated_text.split('[/INST]').pop().trim();
         }
 
-        document.getElementById('user-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') preguntar(); });
-    </script>
+        loading.innerText = aiText;
+        loading.classList.remove('animate-pulse');
+    } catch (error) {
+        loading.innerText = "Error: " + error.message;
+        console.error("Detalle del error:", error);
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+}</script>
 </body>
 </html>
